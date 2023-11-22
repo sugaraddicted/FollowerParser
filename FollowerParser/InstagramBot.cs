@@ -90,7 +90,7 @@ namespace FollowerParser
             {
                 _browser.Navigate().GoToUrl($"https://www.instagram.com/{follower.UserName}/"); 
                 Thread.Sleep(GetRandomTimeoutOutOfRange());
-                WebDriverWait wait = new WebDriverWait(_browser, new TimeSpan(0, 0, 0, 180));
+                WebDriverWait wait = new WebDriverWait(_browser, new TimeSpan(0, 0, 0, 60));
 
                 try
                 {
