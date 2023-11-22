@@ -90,8 +90,13 @@ namespace FollowerParser
             {
                 _browser.Navigate().GoToUrl($"https://www.instagram.com/{follower.UserName}/"); 
                 Thread.Sleep(GetRandomTimeoutOutOfRange());
+                WebDriverWait wait = new WebDriverWait(_browser, new TimeSpan(0, 0, 0, 180));
+
+                wait.Until(ExpectedConditions.ElementIsVisible(
+                    By.XPath("/html/body/div[2]/div/div/div[2]/div/div/div/div[1]/div[1]/div[2]/section/main/div/div/div/div/div")));
                 try
                 {
+                    wait.Until(ExpectedConditions.ElementIsVisible(By.TagName("h1")));
                     var bioElement = _browser.FindElement(By.TagName("h1"));
                     var bio = bioElement.Text;
                     follower.Bio = bio;
