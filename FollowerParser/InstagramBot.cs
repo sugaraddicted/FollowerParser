@@ -38,8 +38,10 @@ namespace FollowerParser
 
                 ScrollToBottom(scrollBox);
 
-                var followers = GetFollowersInfo(scrollBox);
+                var followers = GetFollowersUserame(scrollBox);
                 CloseFollowerList();
+                Thread.Sleep(GetRandomTimeoutOutOfRange());
+                GetFollowersInfo(followers);
                 return followers;
             }
             catch (WebDriverTimeoutException ex)
@@ -65,34 +67,65 @@ namespace FollowerParser
             }
         }
 
-        private List<Follower> GetFollowersInfo(IWebElement scrollBox)
+        private List<Follower> GetFollowersUserame(IWebElement scrollBox)
         {
             Thread.Sleep(GetRandomTimeoutOutOfRange());
             List<IWebElement> links = scrollBox.FindElements(By.TagName("a")).ToList();
-            List<IWebElement> spans = scrollBox.FindElements(By.TagName("span")).ToList();
-            Thread.Sleep(GetRandomTimeoutOutOfRange());
 
-            List<string> names = links.Select(name => name.Text).Where(text => !string.IsNullOrEmpty(text))
-                .ToList();
-            List<string> bios = spans.Select(bio => bio.Text)
+            List<string> usernames = links.Select(name => name.Text).Where(text => !string.IsNullOrEmpty(text))
                 .ToList();
 
-            for (int i = 0; i < bios.Count; i++)
-            {
-                if (names.Contains(bios[i]))
-                {
-                    bios.RemoveAt(i);
-                }
-            }
 
             List<Follower> followers = new List<Follower>();
-            int b = 1;
-            for (int i = 0; i < names.Count; i++)
+            for (int i = 0; i < usernames.Count; i++)
             {
-                followers.Add(new Follower() { UserName = names[i], Bio = bios[b] });
-                b += 2;
+                followers.Add(new Follower() { UserName = usernames[i]});
             }
             return followers;
+        }
+
+        private void GetFollowersInfo(List<Follower> followers)
+        {
+            foreach (var follower in followers)
+            {
+                _browser.Navigate().GoToUrl($"https://www.instagram.com/{follower.UserName}/"); 
+                Thread.Sleep(GetRandomTimeoutOutOfRange());
+                try
+                {
+                    var bioElement = _browser.FindElement(By.TagName("h1"));
+                    var bio = bioElement.Text;
+                    follower.Bio = bio;
+                }
+                catch (NoSuchElementException ex)
+                {
+
+                }
+
+                try
+                {
+                    var linkElement = _browser.FindElement(By.XPath(
+                        "/html/body/div[2]/div/div/div[2]/div/div/div/div[1]/div[1]/div[2]/div[2]/section/main/div/header/section/div[3]/div[3]/a"));
+                    var link = linkElement.GetAttribute("href");
+                    follower.Link = link;
+                }
+                catch (NoSuchElementException ex)
+                {
+
+                }
+
+                try
+                {
+                    var nameElement = _browser.FindElement(By.XPath("/html/body/div[2]/div/div/div[2]/div/div/div/div[1]/div[1]/div[2]/div[2]/section/main/div/header/section/div[3]/div[1]/span"));
+                    var name = nameElement.Text;
+                    follower.Name = name;
+                }
+                catch (NoSuchElementException ex)
+                {
+
+                }
+
+                Thread.Sleep(GetRandomTimeoutOutOfRange());
+            }
         }
 
         private void CloseFollowerList()
@@ -137,10 +170,15 @@ namespace FollowerParser
                         "/html/body/div[2]/div/div/div[2]/div/div/div/div[1]/div[1]/div[2]/section/main/div/div/div/div/div"))
                     .Click();
                 Thread.Sleep(GetRandomTimeoutOutOfRange());
-                _browser.FindElement(By.XPath("//button[contains(text(),'Not Now')]")).Click();
+                try
+                {
+                    _browser.FindElement(By.XPath("//button[contains(text(),'Not Now')]")).Click();
+                }
+                catch (NoSuchElementException ex)
+                {
+                    return;
+                }
 
-                // Navigate to profile page
-                _browser.FindElement(By.XPath($"//a[contains(@href, '/{username}')]")).Click();
                 Thread.Sleep(GetRandomTimeoutOutOfRange());
             }
             catch (WebDriverTimeoutException ex)
@@ -150,6 +188,8 @@ namespace FollowerParser
                 RestartApplication();
             }
         }
+
+
 
         public int GetRandomTimeoutOutOfRange()
         {
