@@ -11,6 +11,7 @@ using OpenQA.Selenium.Support.UI;
 using SeleniumExtras.WaitHelpers;
 using System.Windows;
 using System.Diagnostics;
+using System.Windows.Controls.Primitives;
 
 namespace FollowerParser
 {
@@ -27,22 +28,11 @@ namespace FollowerParser
 
             try
             {
-                WebDriverWait wait = new WebDriverWait(_browser, new TimeSpan(0, 0, 0, 180));
+                WebDriverWait wait = new WebDriverWait(_browser, new TimeSpan(0, 0, 0, 15));
 
                 wait.Until(ExpectedConditions.ElementIsVisible(
                     By.XPath("/html/body/div[6]/div[1]/div/div[2]/div/div/div/div/div[2]/div/div/div[3]")));
 
-                IWebElement scrollBox =
-                    _browser.FindElement(
-                        By.XPath("/html/body/div[6]/div[1]/div/div[2]/div/div/div/div/div[2]/div/div/div[3]"));
-
-                ScrollToBottom(scrollBox);
-
-                var followers = GetFollowersUserame(scrollBox);
-                CloseFollowerList();
-                Thread.Sleep(GetRandomTimeoutOutOfRange());
-                GetFollowersInfo(followers);
-                return followers;
             }
             catch (WebDriverTimeoutException ex)
             {
@@ -50,6 +40,17 @@ namespace FollowerParser
                 _browser.Quit();
                 return new List<Follower>();
             }
+
+            IWebElement scrollBox =
+                _browser.FindElement(
+                    By.XPath("/html/body/div[6]/div[1]/div/div[2]/div/div/div/div/div[2]/div/div/div[3]"));
+
+            ScrollToBottom(scrollBox);
+            var followers = GetFollowersUserame(scrollBox);
+            CloseFollowerList();
+            Thread.Sleep(GetRandomTimeoutOutOfRange());
+            GetFollowersInfo(followers);
+            return followers;
         }
 
         private void ScrollToBottom(IWebElement scrollBox)
@@ -90,11 +91,19 @@ namespace FollowerParser
             {
                 _browser.Navigate().GoToUrl($"https://www.instagram.com/{follower.UserName}/"); 
                 Thread.Sleep(GetRandomTimeoutOutOfRange());
-                WebDriverWait wait = new WebDriverWait(_browser, new TimeSpan(0, 0, 0, 60));
+                WebDriverWait wait = new WebDriverWait(_browser, new TimeSpan(0, 0, 0, 15));
 
                 try
                 {
-                    wait.Until(ExpectedConditions.ElementIsVisible(By.TagName("h1")));
+                    try
+                    {
+                        wait.Until(ExpectedConditions.ElementIsVisible(By.TagName("h1")));
+                    }
+                    catch(WebDriverTimeoutException ex)
+                    {
+
+                    }
+
                     var bioElement = _browser.FindElement(By.TagName("h1"));
                     var bio = bioElement.Text;
                     follower.Bio = bio;
