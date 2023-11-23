@@ -2,16 +2,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Support.UI;
 using SeleniumExtras.WaitHelpers;
 using System.Windows;
 using System.Diagnostics;
-using System.Windows.Controls.Primitives;
 
 namespace FollowerParser
 {
@@ -28,7 +25,7 @@ namespace FollowerParser
             var followers  = new List<Follower>();
             try
             {
-                WebDriverWait wait = new WebDriverWait(_browser, new TimeSpan(0, 0, 0, 15));
+                WebDriverWait wait = new WebDriverWait(_browser, new TimeSpan(0, 0, 0, 10));
 
                 wait.Until(ExpectedConditions.ElementIsVisible(
                     By.XPath("/html/body/div[6]/div[1]/div/div[2]/div/div/div/div/div[2]/div/div/div[3]")));
@@ -58,14 +55,24 @@ namespace FollowerParser
         {
             long lastHeight = 0;
             long currentHeight = 1;
+            int scrollAttempts = 0;
 
             while (lastHeight != currentHeight)
             {
                 lastHeight = currentHeight;
-                Thread.Sleep(GetRandomTimeoutOutOfRange());
+
+                int scrollSpeed = GetRandomTimeoutOutOfRange();
+                Thread.Sleep(scrollSpeed);
+
                 currentHeight = (long)((IJavaScriptExecutor)_browser).ExecuteScript(
                     "arguments[0].scrollTo(0, arguments[0].scrollHeight); return arguments[0].scrollHeight;",
                     scrollBox);
+
+                if (scrollAttempts % 5 == 0)
+                {
+                    Thread.Sleep(GetRandomTimeoutOutOfRange() * 2);
+                }
+                scrollAttempts++;
             }
         }
 
@@ -81,8 +88,9 @@ namespace FollowerParser
             List<Follower> followers = new List<Follower>();
             for (int i = 0; i < usernames.Count; i++)
             {
-                followers.Add(new Follower() { UserName = usernames[i]});
+                followers.Add(new Follower() { UserName = usernames[i], Id = i+1});
             }
+            _browser.Manage().Cookies.DeleteAllCookies();
             return followers;
         }
 
@@ -92,7 +100,7 @@ namespace FollowerParser
             {
                 _browser.Navigate().GoToUrl($"https://www.instagram.com/{follower.UserName}/"); 
                 Thread.Sleep(GetRandomTimeoutOutOfRange());
-                WebDriverWait wait = new WebDriverWait(_browser, new TimeSpan(0, 0, 0, 15));
+                WebDriverWait wait = new WebDriverWait(_browser, new TimeSpan(0, 0, 0, 10));
 
                 try
                 {
@@ -102,16 +110,13 @@ namespace FollowerParser
                     }
                     catch(WebDriverTimeoutException ex)
                     {
-
                     }
-
                     var bioElement = _browser.FindElement(By.TagName("h1"));
                     var bio = bioElement.Text;
                     follower.Bio = bio;
                 }
                 catch (NoSuchElementException ex)
                 {
-
                 }
 
                 try
@@ -123,7 +128,6 @@ namespace FollowerParser
                 }
                 catch (NoSuchElementException ex)
                 {
-
                 }
 
                 try
@@ -134,7 +138,14 @@ namespace FollowerParser
                 }
                 catch (NoSuchElementException ex)
                 {
-
+                }
+                try
+                {
+                    _browser.FindElement(By.XPath("//button[contains(text(),'Reload page')]"));
+                }
+                catch (NoSuchElementException ex)
+                {
+                    return;
                 }
 
                 Thread.Sleep(GetRandomTimeoutOutOfRange());
@@ -159,6 +170,18 @@ namespace FollowerParser
         public void Login(string username, string password)
         {
             ChromeOptions options = new ChromeOptions();
+            options.AddArgument("--disable-blink-features=AutomationControlled");
+            options.AddExcludedArgument("enable-automation");
+            options.AddExcludedArgument("useAutomationExtension");
+            var userAgents = new List<string>
+            {
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36 Edge/18.19577",
+                "Mozilla/5.0 (Windows; U; Windows NT 6.1; rv:2.2) Gecko/20110201",
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/7.0.3 Safari/7046A194A"
+            };
+            var randomUserAgent = userAgents[random.Next(userAgents.Count)];
+            options.AddArgument($"--user-agent={randomUserAgent}");
             options.AddArgument("--lang=en-US");
             options.AddArgument("--window-size=1200,1000");
 
@@ -172,10 +195,17 @@ namespace FollowerParser
             _browser.FindElement(By.XPath("//button[@type='submit']")).Click();
             Thread.Sleep(GetRandomTimeoutOutOfRange());
 
+            var cookies = _browser.Manage().Cookies.AllCookies;
+
+            foreach (var cookie in cookies)
+            {
+                _browser.Manage().Cookies.AddCookie(cookie);
+            }
+
             // Handle "Not Now" buttons
             try
             {
-                WebDriverWait wait = new WebDriverWait(_browser, new TimeSpan(0, 0, 0, 60));
+                WebDriverWait wait = new WebDriverWait(_browser, new TimeSpan(0, 0, 0, 10));
 
                 wait.Until(ExpectedConditions.ElementIsVisible(
                     By.XPath("/html/body/div[2]/div/div/div[2]/div/div/div/div[1]/div[1]/div[2]/section/main/div/div/div/div/div")));
@@ -201,8 +231,6 @@ namespace FollowerParser
                 RestartApplication();
             }
         }
-
-
 
         public int GetRandomTimeoutOutOfRange()
         {
