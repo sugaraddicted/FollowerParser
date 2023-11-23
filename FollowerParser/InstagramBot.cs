@@ -90,7 +90,6 @@ namespace FollowerParser
             {
                 followers.Add(new Follower() { UserName = usernames[i], Id = i+1});
             }
-            _browser.Manage().Cookies.DeleteAllCookies();
             return followers;
         }
 
@@ -194,13 +193,6 @@ namespace FollowerParser
             _browser.FindElement(By.Name("password")).SendKeys(password);
             _browser.FindElement(By.XPath("//button[@type='submit']")).Click();
             Thread.Sleep(GetRandomTimeoutOutOfRange());
-
-            var cookies = _browser.Manage().Cookies.AllCookies;
-
-            foreach (var cookie in cookies)
-            {
-                _browser.Manage().Cookies.AddCookie(cookie);
-            }
 
             // Handle "Not Now" buttons
             try
