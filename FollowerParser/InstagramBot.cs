@@ -174,7 +174,7 @@ namespace FollowerParser
             // Handle "Not Now" buttons
             try
             {
-                WebDriverWait wait = new WebDriverWait(_browser, new TimeSpan(0, 0, 0, 180));
+                WebDriverWait wait = new WebDriverWait(_browser, new TimeSpan(0, 0, 0, 60));
 
                 wait.Until(ExpectedConditions.ElementIsVisible(
                     By.XPath("/html/body/div[2]/div/div/div[2]/div/div/div/div[1]/div[1]/div[2]/section/main/div/div/div/div/div")));
